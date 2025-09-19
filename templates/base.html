@@ -13,9 +13,14 @@
 </head>
 <body>
   <!-- Navbar -->
-  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+  <!-- <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container-fluid">
       <a class="navbar-brand" href="/">⚖️ Legal AI Assistant</a>
+    </div>
+  </nav> -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+      <a class="navbar-brand fw-bold" href="{{ url_for('index') }}">⚖️ Legal AI Assistant</a>
     </div>
   </nav>
 
@@ -27,8 +32,7 @@
   <!-- Footer -->
   <footer class="bg-light text-center text-muted mt-5 py-3">
     <small>
-      ⚖️ Legal AI Assistant — Built with Flask & Google Generative AI  
-      <br>For demo/educational purposes only, not a substitute for professional legal advice.
+      ⚖️ Legal AI Assistant — A Generative AI based solution to solve all your legal querries
     </small>
   </footer>
 
