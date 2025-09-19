@@ -5,11 +5,18 @@ from werkzeug.utils import secure_filename
 import PyPDF2
 import docx
 import markdown  # pip install markdown
+from flask_sqlalchemy import SQLAlchemy
+from datetime import datetime
 
 # ---- Flask setup ----
 app = Flask(__name__)
 app.config["UPLOAD_FOLDER"] = "uploads"
 os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
+# ---- Database setup ----
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///legal_assistant.db"  # SQLite file
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+db = SQLAlchemy(app)
 
 # Use a secret key for session usage
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev-secret-key")
@@ -153,6 +160,26 @@ def upload():
     except Exception as e:
         simplified_text_html = f"⚠️ Error while generating summary: {str(e)}"
 
+    # Save document to DB (for demo, single user id = 1)
+    user = User.query.first()
+    if not user:
+        user = User(username="demo_user")
+        db.session.add(user)
+        db.session.commit()
+
+    new_doc = Document(
+        filename=filename,
+        language=language,
+        original_text=DOCUMENT_CONTEXT,
+        simplified_text=simplified_text_raw,
+        user_id=user.id,
+    )
+    db.session.add(new_doc)
+    db.session.commit()
+
+    # Store doc_id in session to use for Q&A
+    session["last_doc_id"] = new_doc.id
+
     return render_template(
         "result.html",
         original=raw_text[:2000],
@@ -176,8 +203,17 @@ def ask():
     # accept either key name for safety
     chat_lang = (data.get("chat_language") or data.get("chatLang") or "auto")
 
-    if not DOCUMENT_CONTEXT:
+    # Check if document exists
+    doc_id = session.get("last_doc_id")
+    if not doc_id:
         return jsonify({"answer": "⚠️ Please upload a legal document first."})
+
+    doc = Document.query.get(doc_id)
+    if not doc:
+        return jsonify({"answer": "⚠️ Document not found."})
+
+    # if not DOCUMENT_CONTEXT:
+    #     return jsonify({"answer": "⚠️ Please upload a legal document first."})
 
     # Build prompt depending on chat language selection
     if chat_lang == "auto":
@@ -209,6 +245,26 @@ def ask():
         answer = f"⚠️ Error while generating answer: {str(e)}"
 
     return jsonify({"answer": answer})
+
+
+# Models ------------------------
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class Document(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    filename = db.Column(db.String(200), nullable=False)
+    language = db.Column(db.String(10), nullable=False, default="en")
+    original_text = db.Column(db.Text, nullable=False)
+    simplified_text = db.Column(db.Text, nullable=False)
+    uploaded_at = db.Column(db.DateTime, default=datetime.utcnow)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+
+    user = db.relationship("User", backref=db.backref("documents", lazy=True))
+
 
 
 # Run the app
