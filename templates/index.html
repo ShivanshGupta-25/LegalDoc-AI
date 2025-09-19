@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="text-center">
+  <h1>Demystify Legal Documents ⚖️</h1>
+  <p class="lead">
+    Upload contracts, agreements, or policies and get simplified explanations instantly 
+    in your preferred language.
+  </p>
+
+  <form action="/upload" method="post" enctype="multipart/form-data" class="mt-4">
+    <div class="mb-3">
+      <input type="file" name="file" class="form-control" accept=".pdf,.docx,.txt" required>
+    </div>
+
+    <div class="mb-3">
+      <label for="language" class="form-label">Select Summary Language</label>
+      <select name="language" id="language" class="form-select" required>
+        <option value="en" selected>English</option>
+        <option value="hi">Hindi</option>
+      </select>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Upload & Simplify</button>
+  </form>
+</div>
+{% endblock %}
